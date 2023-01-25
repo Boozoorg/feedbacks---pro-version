@@ -1,0 +1,217 @@
+basePath: /
+definitions:
+  models.Faq:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      key:
+        example: "1"
+        type: string
+      question:
+        example: "1"
+        type: string
+      response:
+        example: "1"
+        type: string
+    type: object
+  models.FaqFilters:
+    properties:
+      categoryID:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      key:
+        example: "1"
+        type: string
+      page:
+        example: 1
+        type: integer
+      pageLimit:
+        example: 1
+        type: integer
+      product:
+        example: "1"
+        type: string
+      project:
+        example: "1"
+        type: string
+      question:
+        example: "1"
+        type: string
+      search:
+        example: "1"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: this is swagger
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /createRoom:
+    get:
+      operationId: create-chat-room
+      parameters:
+      - description: id of user
+        format: userID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: users name
+        format: fio
+        in: path
+        name: fio
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Agent uses this route to create chat room
+      tags:
+      - Chat
+  /getFaqs:
+    delete:
+      operationId: delete-faq
+      parameters:
+      - description: id of which faq we must delete
+        format: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Delete FAQ
+      tags:
+      - Faq
+    get:
+      operationId: get-faq
+      parameters:
+      - description: search question to faq
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.FaqFilters'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: get FAQ
+      tags:
+      - Faq
+    post:
+      operationId: create-faq
+      parameters:
+      - description: Create FAQ and save it in db
+        in: body
+        name: FAQ_data
+        required: true
+        schema:
+          $ref: '#/definitions/models.Faq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Create FAQ
+      tags:
+      - Faq
+    put:
+      operationId: update-faq
+      parameters:
+      - description: Change the FAQ from db
+        in: body
+        name: FAQ_data
+        required: true
+        schema:
+          $ref: '#/definitions/models.Faq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Update FAQ
+      tags:
+      - Faq
+  /joinRoom:
+    get:
+      operationId: join-chat-room
+      parameters:
+      - description: supports name
+        format: fio
+        in: path
+        name: fio
+        required: true
+        type: string
+      - description: id of room which support must join or if want get max users and
+          there id set it 0)
+        format: roomID
+        in: path
+        name: room_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Supports choose chat to join
+      tags:
+      - Chat
+securityDefinitions:
+  ApiKeyAuth:
+    description: Description for what is this security definition being used
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
