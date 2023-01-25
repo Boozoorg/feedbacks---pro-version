@@ -19,9 +19,10 @@ type Receiver struct {
 	MessageType int64
 }
 
-type Rooms struct {
-	Max     int64   `json:"max"`
-	RoomsConf []string `json:"rooms"`
+type RoomsConf struct {
+	ID   int64  `json:"id"`
+	Name string `json:"Name"`
+	Time string `json:"time"`
 }
 
 type MessageToBot struct {

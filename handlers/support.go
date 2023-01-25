@@ -20,16 +20,16 @@ import (
 // @Failure 404     {object} string
 // @Router  /joinRoom [get]
 func SupportJoinChat(c *gin.Context) {
-	var id  int64
-
+	var id int64
+	var name string
+	var role string
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	
-	name := c.Query("fio")
+
 	roomID := c.Query("roomID")
 	if roomID != "" {
 		id, err = strconv.ParseInt(roomID, 10, 64)
@@ -46,21 +46,30 @@ func SupportJoinChat(c *gin.Context) {
 	} else {
 		id = 0
 	}
+	switch c.Query("userID") {
+	case "1":
+		name = "BUZURG"
+		role = "SUPERVISOR"
+	default:
+		name = "KOMRON"
+		role = "SUPPORT"
+	}
+	log.Println("name:", name, "role:", role, "id:", id)
 
-	client := newSupport(name, id, conn, Ws)
+	client := newSupport(name, role, id, conn, Ws)
 	go client.readMessage()
 	go client.writeMessage()
 
 	Ws.register <- client
 }
 
-func newSupport(name string, roomID int64, conn *websocket.Conn, wsServer *WsServer) *Chat {
+func newSupport(name, role string, roomID int64, conn *websocket.Conn, wsServer *WsServer) *Chat {
 	return &Chat{
 		name:     name,
 		conn:     conn,
 		wsServer: wsServer,
 		send:     make(chan []byte, 256),
 		room:     roomID,
-		support:  true,
+		role:     role,
 	}
 }

@@ -15,6 +15,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type Rooms struct {
+	max        int64
+	rooms_conf []models.RoomsConf
+}
+
 var ch = make(chan int64, 100)
 
 type WsServer struct {
@@ -123,12 +128,11 @@ func (client *Chat) disconnect() {
 func (server *WsServer) registerClient(client *Chat) {
 	server.clients[client] = true
 	server.roomListr()
-
-	if client.support && client.room != 0 {
+	if (client.role == "SUPERVISOR" || client.role == "SUPPORT") && client.room != 0 {
 		ch <- client.room
 		// chatHistory(client)
 		server.ReceiveMessage(client.name, fmt.Sprintf("Здравствуйте, меня зовут %v и я кансультант.", client.name), client.room, models.Text)
-	} else if !client.support {
+	} else if client.role != "SUPERVISOR" && client.role != "SUPPORT" {
 		server.supportIsAvailable(client)
 		// chatHistory(client)
 	}
@@ -142,7 +146,7 @@ func chatHistory(chat *Chat) {
 		log.Println(err)
 		return
 	}
-	if chat.support {
+	if chat.role == "2" {
 		for _, v := range value {
 			err = json.Unmarshal([]byte(v), &lastChats)
 			log.Println(v)
@@ -175,7 +179,7 @@ func (server *WsServer) unregisterClient(client *Chat) {
 		delete(server.clients, client)
 	}
 	server.roomListr()
-	if !client.support {
+	if client.role != "SUPERVISOR" && client.role != "SUPPORT" {
 		server.ReceiveMessage("server", fmt.Sprintf("Клиент: %v, покинул чат.", client.name), client.room, models.Text)
 	}
 }
@@ -196,24 +200,25 @@ func (server *WsServer) ReceiveMessage(sender, message string, room, messageType
 }
 
 func (server *WsServer) roomListr() {
-	var room = models.Rooms{
-		RoomsConf: nil,
-		Max:     0,
+	var room = Rooms{
+		rooms_conf: nil,
+		max:        0,
 	}
 	for client := range server.clients {
-		if !client.support {
-			room.Max++
-			room.RoomsConf = append(room.RoomsConf, fmt.Sprintf(`{"id":"%v", "name":"%v", "time":"%v"},`, client.room, client.name, time.Now().Format("2006/02/01 15:04")))
+		if client.role != "SUPERVISOR" && client.role != "SUPPORT" {
+			room.max++
+			room.rooms_conf = append(room.rooms_conf, models.RoomsConf{
+				ID:   client.room,
+				Name: client.name,
+				Time: time.Now().Format("2006/02/01 15:04"),
+			})
 		}
 	}
-	if room.Max > 0 {
-		room.RoomsConf[len(room.RoomsConf)-1] = room.RoomsConf[len(room.RoomsConf)-1][:len(room.RoomsConf[len(room.RoomsConf)-1])-1]
-	}
-	message := fmt.Sprintf(`{"type":"conf", "max_users":"%v", "agents":%v}`, room.Max, room.RoomsConf)
+	message := fmt.Sprintf(`%+v`, room)
 	log.Println(string(message))
 	for client := range server.clients {
-		if client.room == 0 {
-			client.send <- []byte(message[:])
+		if client.role == "SUPERVISOR" || client.role == "SUPPORT" {
+			client.send <- []byte(message)
 		}
 	}
 }
@@ -223,7 +228,7 @@ func (server *WsServer) supportIsAvailable(client *Chat) {
 	var countSup int64 = 0
 
 	for client := range server.clients {
-		if !client.support {
+		if client.role != "SUPERVISOR" && client.role != "SUPPORT" {
 			countUser++
 		} else {
 			countSup++
