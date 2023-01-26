@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"feedbacks/models"
 	"log"
 	"net/http"
 	"strconv"
@@ -20,9 +21,13 @@ import (
 // @Failure 404     {object} string
 // @Router  /joinRoom [get]
 func SupportJoinChat(c *gin.Context) {
-	var id int64
-	var name string
-	var role string
+	var user models.User
+	id, err := strconv.ParseInt(c.Query("userID"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	user.ID = id
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -46,30 +51,34 @@ func SupportJoinChat(c *gin.Context) {
 	} else {
 		id = 0
 	}
+	user.Room_id = id
 	switch c.Query("userID") {
 	case "1":
-		name = "BUZURG"
-		role = "SUPERVISOR"
+		user.Name = "BUZURG"
+		user.Role = SUPERVISOR
 	default:
-		name = "KOMRON"
-		role = "SUPPORT"
+		user.Name = "KOMRON"
+		user.Role = SUPPORT
 	}
-	log.Println("name:", name, "role:", role, "id:", id)
+	log.Println("user:", user)
 
-	client := newSupport(name, role, id, conn, Ws)
+	client := newSupport(user, conn, Ws)
 	go client.readMessage()
 	go client.writeMessage()
 
 	Ws.register <- client
 }
 
-func newSupport(name, role string, roomID int64, conn *websocket.Conn, wsServer *WsServer) *Chat {
+func newSupport(user models.User, conn *websocket.Conn, wsServer *WsServer) *Chat {
 	return &Chat{
-		name:     name,
 		conn:     conn,
 		wsServer: wsServer,
-		send:     make(chan []byte, 256),
-		room:     roomID,
-		role:     role,
+		send:     make(chan models.SendMessage, 256),
+		user: models.User{
+			ID:      user.ID,
+			Name:    user.Name,
+			Role:    user.Role,
+			Room_id: user.Room_id,
+		},
 	}
 }

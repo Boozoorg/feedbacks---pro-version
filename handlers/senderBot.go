@@ -12,8 +12,8 @@ import (
 func SenderBot(client *Chat) {
 	var MessageToSupport = models.MessageToBot{
 		ProductID: 1,
-		RoomID:    client.room,
-		Fio:       client.name,
+		RoomID:    client.user.Room_id,
+		Fio:       client.user.Name,
 		Message:   "made in heaven",
 		Time:      time.Now().Format("15:04"),
 	}

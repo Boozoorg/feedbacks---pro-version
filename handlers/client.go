@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"feedbacks/models"
 	"log"
 	"net/http"
 	"strconv"
@@ -18,10 +19,8 @@ var upgrader = websocket.Upgrader{
 type Chat struct {
 	wsServer *WsServer
 	conn     *websocket.Conn
-	send     chan []byte
-	name     string
-	role     string
-	room     int64
+	send     chan models.SendMessage
+	user     models.User
 }
 
 // @Summary Agent uses this route to create chat room
@@ -34,14 +33,15 @@ type Chat struct {
 // @Failure 404     {object} string
 // @Router  /createRoom [get]
 func OpenChat(c *gin.Context) {
+	var user models.User
 	id, err := strconv.ParseInt(c.Query("userID"), 10, 64)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	var name string
-	var role string
-	log.Println("role:", c.Request.Header.Get("role"))
+	user.ID = id
+	user.Room_id = id
+
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -52,21 +52,21 @@ func OpenChat(c *gin.Context) {
 	}
 	switch id {
 	case 3:
-		name = "AMIN"
-		role = "TERMINAL"
+		user.Name = "AMIN"
+		user.Role = TERMINAL
 	case 4:
-		name = "SHER"
-		role = "DEALER"
+		user.Name = "SHER"
+		user.Role = DEALER
 	case 5:
-		name = "UMED"
-		role = "MANAGER"
+		user.Name = "UMED"
+		user.Role = MANAGER
 	default:
-		name = "ABROR"
-		role = "DEVELOPER"
+		user.Name = "ABROR"
+		user.Role = DEVELOPER
 	}
-	log.Println("name:", name, "role:", role, "id:", id)
+	log.Println("user:", user)
 
-	client := newClient(name, role, id, conn, Ws)
+	client := newClient(user, conn, Ws)
 
 	go client.readMessage()
 	go client.writeMessage()
@@ -74,13 +74,16 @@ func OpenChat(c *gin.Context) {
 	Ws.register <- client
 }
 
-func newClient(name, role string, id int64, conn *websocket.Conn, ws *WsServer) *Chat {
+func newClient(user models.User, conn *websocket.Conn, ws *WsServer) *Chat {
 	return &Chat{
-		name:     name,
 		conn:     conn,
 		wsServer: ws,
-		send:     make(chan []byte, 256),
-		room:     id,
-		role:     role,
+		send:     make(chan models.SendMessage, 256),
+		user: models.User{
+			ID:      user.ID,
+			Name:    user.Name,
+			Role:    user.Role,
+			Room_id: user.ID,
+		},
 	}
 }

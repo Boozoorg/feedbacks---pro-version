@@ -25,7 +25,7 @@ func main() {
 	defer deferFunc()
 	models.Setup("config/config.json")
 	// logging.InitLogger()
-	// db.SetupDB()
+	db.SetupDB()
 	handlers.LaunchRoutes()
 }
 
