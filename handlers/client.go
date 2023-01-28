@@ -1,13 +1,6 @@
 package handlers
 
 import (
-	"feedbacks/models"
-	"log"
-	"net/http"
-	"strconv"
-
-	"github.com/gin-gonic/gin"
-
 	"github.com/gorilla/websocket"
 )
 
@@ -19,8 +12,10 @@ var upgrader = websocket.Upgrader{
 type Chat struct {
 	wsServer *WsServer
 	conn     *websocket.Conn
-	send     chan models.SendMessage
-	user     models.User
+	send     chan []byte
+	name     string
+	room     int64
+	support  bool
 }
 
 // @Summary Agent uses this route to create chat room
@@ -32,58 +27,40 @@ type Chat struct {
 // @Success 200     {object} string
 // @Failure 404     {object} string
 // @Router  /createRoom [get]
-func OpenChat(c *gin.Context) {
-	var user models.User
-	id, err := strconv.ParseInt(c.Query("userID"), 10, 64)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	user.ID = id
-	user.Room_id = id
+// func OpenChat(c *gin.Context) {
+// 	id := c.Query("userID")
+// 	name := c.Query("fio")
 
-	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err})
-		c.Abort()
-		return
-	}
-	switch id {
-	case 3:
-		user.Name = "AMIN"
-		user.Role = TERMINAL
-	case 4:
-		user.Name = "SHER"
-		user.Role = DEALER
-	case 5:
-		user.Name = "UMED"
-		user.Role = MANAGER
-	default:
-		user.Name = "ABROR"
-		user.Role = DEVELOPER
-	}
-	log.Println("user:", user)
+// 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+// 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+// 	if err != nil {
+// 		log.Println(err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+// 		c.Abort()
+// 		return
+// 	}
 
-	client := newClient(user, conn, Ws)
+// 	client := newClient(name, id, conn, Ws)
 
-	go client.readMessage()
-	go client.writeMessage()
+// 	go client.readMessage()
+// 	go client.writeMessage()
 
-	Ws.register <- client
-}
+// Ws.register <- client
+// }
 
-func newClient(user models.User, conn *websocket.Conn, ws *WsServer) *Chat {
-	return &Chat{
-		conn:     conn,
-		wsServer: ws,
-		send:     make(chan models.SendMessage, 256),
-		user: models.User{
-			ID:      user.ID,
-			Name:    user.Name,
-			Role:    user.Role,
-			Room_id: user.ID,
-		},
-	}
-}
+// func newClient(name, ID string, conn *websocket.Conn, wsServer *WsServer) *Chat {
+// 	id, err := strconv.ParseInt(ID, 10, 64)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return nil
+// 	}
+
+// 	return &Chat{
+// 		name:     name,
+// 		conn:     conn,
+// 		wsServer: wsServer,
+// 		send:     make(chan []byte, 256),
+// 		room:     id,
+// 		support:  false,
+// 	}
+// }
